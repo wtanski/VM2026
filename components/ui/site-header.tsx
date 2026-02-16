@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { UserNav } from "@/components/ui/user-nav";
 
 export function SiteHeader() {
   return (
@@ -14,9 +15,7 @@ export function SiteHeader() {
           <Button variant="ghost" asChild>
             <Link href="/dashboard">Dashboard</Link>
           </Button>
-          <Button asChild>
-            <Link href="/login">Logga in</Link>
-          </Button>
+          <UserNav />
         </nav>
       </div>
       <Separator />
