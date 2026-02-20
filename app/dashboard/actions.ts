@@ -120,3 +120,53 @@ export async function acceptInvite(token: string) {
   return { ok: true as const, groupId: invite.group_id as string };
 }
 
+export async function getGroupMembers(groupId: string) {
+  const supabase = await createClient();
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) return { ok: false as const, error: "Du måste vara inloggad." };
+
+  // Fetch group members
+  const { data: membersData, error: membersError } = await supabase
+    .from("group_members")
+    .select("user_id, role")
+    .eq("group_id", groupId);
+
+  if (membersError) return { ok: false as const, error: membersError.message };
+
+  if (!membersData || membersData.length === 0) {
+    return { ok: true as const, members: [] };
+  }
+
+  // Get all user IDs
+  const userIds = membersData.map((m) => m.user_id);
+
+  // Fetch profiles for all members
+  const { data: profilesData } = await supabase
+    .from("profiles")
+    .select("id, display_name")
+    .in("id", userIds);
+
+  // Create a map of profiles by user ID
+  const profilesMap = new Map<string, { id: string; display_name: string | null }>();
+  for (const profile of profilesData ?? []) {
+    profilesMap.set(profile.id, profile);
+  }
+
+  // Combine members with their profiles
+  const members = membersData.map((row) => {
+    const profile = profilesMap.get(row.user_id);
+    return {
+      userId: row.user_id as string,
+      role: row.role as string,
+      profile: profile
+        ? {
+            id: profile.id,
+            displayName: profile.display_name,
+          }
+        : null,
+    };
+  });
+
+  return { ok: true as const, members };
+}
+

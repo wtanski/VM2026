@@ -7,10 +7,47 @@ create extension if not exists "pgcrypto";
 -- Public profiles (used for user search + display names).
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
+  username text unique,
   display_name text,
-  avatar_url text,
   updated_at timestamptz not null default now()
 );
+
+-- If you already have the profiles table, run this to add the username column:
+--   alter table public.profiles add column if not exists username text unique;
+
+-- Index for fast username lookups
+create index if not exists profiles_username_idx on public.profiles (username);
+
+-- Automatically create a profile when a new user signs up
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  insert into public.profiles (id, display_name)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name')
+  );
+  return new;
+end;
+$$;
+
+-- Trigger to call handle_new_user on signup
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- If you already have users without profiles, run this to create profiles for them:
+--   insert into public.profiles (id, display_name)
+--   select 
+--     u.id,
+--     coalesce(u.raw_user_meta_data ->> 'full_name', u.raw_user_meta_data ->> 'name')
+--   from auth.users u
+--   left join public.profiles p on p.id = u.id
+--   where p.id is null;
 
 alter table public.profiles enable row level security;
 

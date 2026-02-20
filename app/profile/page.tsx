@@ -13,7 +13,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 type ProfileRow = {
   id: string;
   display_name: string | null;
-  avatar_url: string | null;
 };
 
 export default function ProfilePage() {
@@ -27,9 +26,9 @@ export default function ProfilePage() {
 
   const [userId, setUserId] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const [displayName, setDisplayName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -49,10 +48,11 @@ export default function ProfilePage() {
 
       setUserId(user.id);
       setEmail((user.email as string | undefined) ?? null);
+      setAvatarUrl((user.user_metadata?.avatar_url as string | undefined) ?? null);
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -65,7 +65,6 @@ export default function ProfilePage() {
 
       const row = profile as ProfileRow | null;
       setDisplayName(row?.display_name ?? "");
-      setAvatarUrl(row?.avatar_url ?? "");
       setLoading(false);
     }
 
@@ -86,7 +85,6 @@ export default function ProfilePage() {
     const payload: ProfileRow = {
       id: userId,
       display_name: displayName.trim() || null,
-      avatar_url: avatarUrl.trim() || null,
     };
 
     const { error: upsertError } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
@@ -138,22 +136,12 @@ export default function ProfilePage() {
 
               <form onSubmit={onSave} className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="displayName">Display name</Label>
+                  <Label htmlFor="displayName">Smeknamn</Label>
                   <Input
                     id="displayName"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="t.ex. William"
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="avatarUrl">Avatar URL</Label>
-                  <Input
-                    id="avatarUrl"
-                    value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
-                    placeholder="https://…"
                   />
                 </div>
 

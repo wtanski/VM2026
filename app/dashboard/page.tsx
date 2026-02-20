@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CreateGroupButton } from "./create-group-button";
+import { MyGroupsModule } from "./ui/my-groups-module";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -73,6 +74,8 @@ export default async function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      <MyGroupsModule />
 
       <Card>
         <CardHeader>
